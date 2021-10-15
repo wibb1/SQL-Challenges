@@ -594,3 +594,275 @@ SQL state: 23514
 /* when you fix the birthdate you are able to submit the values */
 INSERT INTO employees (first_name, last_name, birthdate, hire_date, salary)
 VALUES ('Jose', 'Portilla', '1990-11-03', '2010-01-01', 100)
+
+
+/***********************************************
+/* Section 9: Assessment Test 3 */
+/***********************************************/
+
+/* Create Teachers Table */
+CREATE TABLE teachers(
+  teacher_id SERIAL PRIMARY KEY
+	first_name VARCHAR(50) NOT NULL,
+	last_name VARCHAR(50) NOT NULL,
+	homeroom_number VARCHAR(4),
+	department VARCHAR(4) NOT NULL,
+	email VARCHAR(105) UNIQUE NOT NULL,
+	phone VARCHAR(15) UNIQUE NOT NULL
+)
+
+/* Create Students Table */
+CREATE TABLE students(
+  student_id SERIAL PRIMARY KEY,
+  first_name VARCHAR(50) NOT NULL,
+  last_name VARCHAR(50) NOT NULL,
+  homeroom_number VARCHAR(4) NOT NULL,
+  phone VARCHAR(15) NOT NULL UNIQUE,
+  email VARCHAR(105) UNIQUE,
+  graduation_year INTEGER NOT NULL
+)
+
+/* Add a student */
+INSERT INTO students(
+  first_name, last_name, homeroom_number, phone, graduation_year)
+  VALUES(
+    'Mark', 'Watney', 5, 777-555-1234, 2035
+  )
+)
+
+/* Add a teacher */
+INSERT INTO teachers(first_name,last_name, homeroom_number,department,email,phone)
+VALUES ('Jonas','Salk',5,'BIO','jsalk@school.org','7755554321');
+
+/***********************************************
+/* Section 10: Conditional Expressions and Procedures Introduction*/
+/***********************************************/
+/* Lecture 73: CASE */
+
+/* CASE Statement allows you to execute code only when certain conditions are met.  Similar to IF/ELSE statements in other programming languages */
+
+/* Genral Syntax */
+CASE 
+  WHEN condition1 THEN result1
+  WHEN condition2 THEN result2
+  WHEN condition3 THEN result3
+  ELSE some_other_result
+END
+
+/* Simple example - table a(1,2)*/
+
+CREATE TABLE test(a)
+VALUES(1,2)
+
+/*
+test = 
+a |
+---
+1 |
+2 |
+---
+*/
+
+SELECT a,
+CASE 
+  WHEN a=1 THEN 'one'
+  WHEN a=2 THEN 'two'
+  ELSE 'other'
+END AS label
+FROM test;
+
+/*
+test =
+a | label |
+-----------
+1 | one   |
+2 | two   |
+-----------
+*/
+
+/* CASE Expression Syntax */
+CASE expression
+  WHEN value1 THEN result1
+  WHEN value2 THEN result2
+  WHEN value3 THEN result3
+  ELSE value4
+END
+
+/* Previous example as CASE expression statement */
+SELECT a,
+CASE a 
+  WHEN 1 THEN 'one'
+  WHEN 2 THEN 'two'
+  ELSE 'other'
+END
+FROM test
+
+/* Set customers with ids < 100 to be premium status, customers with ids < 200 as plus status, all other normal */
+
+SELECT customer_id,
+CASE 
+  WHEN (customer_id <= 100) THEN 'premium'
+  WHEN (customer_id <= 200) THEN 'plus'
+  ELSE 'normal' 
+END AS customer_status
+FROM customer
+
+
+/* Holding a customer raffle */
+SELECT customer_id,
+CASE customer_id 
+  WHEN 2 THEN 'WINNER!!'
+  WHEN 5 THEN 'Second Place'
+  ELSE '--' 
+END AS raffle_status 
+FROM customer
+
+/* create categories for rental rates in films and determine how many are in each category */
+SELECT 
+SUM(CASE rental_rate 
+	WHEN 0.99 THEN 1
+	ELSE 0
+END) AS number_of_bargains,
+SUM(CASE rental_rate
+   WHEN 2.99 THEN 1
+   ELSE 0
+END) as regular,
+SUM(CASE rental_rate
+   WHEN 4.99 THEN 1
+   ELSE 0
+END) as premium
+FROM film
+
+
+/* Lecture 74: Challenge Task
+compare the various amounts of films we have per movie rating. Use CASE and the dvdrentl database to re-create this table
+---------------------------
+| r      | pg    | pg13   |
+| bigint | bigint| bigint |
+---------------------------
+|  195   | 194   | 223    |
+*/
+
+SELECT  
+	SUM(CASE rating
+	  WHEN 'R' THEN 1
+	  ELSE 0
+	  END) AS r,
+	SUM(CASE rating
+	  WHEN 'PG' THEN 1
+	  ELSE 0
+	  END) AS pg,
+	SUM(CASE rating
+	  WHEN 'PG-13' THEN 1
+	  ELSE 0
+	  END) AS pg13
+FROM film 
+
+
+/* Lecture 75: COALESCE */
+/* accepts unlimitted numbr of arguments and returns the first argument that is not null, if all arguments are null COALESCE returns null.*/
+
+COALESCE(arg_1, arg_2, ..., arg_n)
+
+SELECT COALESCE(1,2)
+/* 1 */
+
+SELECT COALESCE(null,2,3)
+/* 2 */
+
+/* table of products
+---------------------------
+| item | price | discount |
+---------------------------
+|  A   |  100  |  20      |
+|  B   |  300  |  null    |
+|  C   |  200  |  10      |
+---------------------------
+*/
+SELECT item, (price-discount) AS final FROM table
+/* fails to calculate the value of B*/
+SELECT item, (price-COALESCE(discount, 0)) AS final FROM table
+/* COALESCE checks if the value of discount is null, if not it returns discount, if it is it returns 0*/
+
+/* Lecture 76: CAST */
+/* allows casting one data type to another - careful that the data can be cast to another type.  String '5' could cast to Integer but 'five' cannot */
+
+/*Syntax for CAST*/
+SELECT CAST('5' AS INTEGER)
+
+/* PostgreSQL Cast operator*/
+SELECT '5'::INTEGER
+
+/* use with column name */
+SELECT CAST(date AS TIMESTAMP)
+FROM table
+
+/* get the length of the inventory ID from the inventory database */
+SELECT CHAR_LENGTH(CAST(inventory_id AS VARCHAR)) FROM inventory
+
+
+/* Lecture 77: NULLIF */
+/* takes in 2 inputs and returns null if they are equal or returns the first input */
+
+NULLIF(10,10) /* returns NULL*/
+NULLIF(10,12) /* returns 10 */
+/* useful where a null value would cause an error or unwanted result
+
+table depts
+-----------------
+| Name   | dept |
+-----------------
+| Vinton |   A  |
+| Lauren |   A  |
+| Claire |   B  |
+-----------------
+*/
+
+SELECT (
+  SUM(CASE WHEN dept = 'A' THEN 1 ELSE 0 END) /
+  SUM(CASE WHEN dept = 'B' THEN 1 ELSE 0 END)
+) AS dept_ratio
+
+/* Person in dept B leaves - get error with the above query (divide by 0) */
+SELECT (
+  SUM(CASE WHEN dept = 'A' THEN 1 ELSE 0 END) /
+  NULLIF(SUM(CASE WHEN dept = 'B' THEN 1 ELSE 0 END),0)
+) AS dept_ratio
+
+/* returns NULL instead of an error */
+
+/* Lecture 78: Views */
+/* allows you to store a query that is used often */
+CREATE VIEW customer_info AS
+SELECT first_name, last_name, address FROM customer
+JOIN address
+ON customer.address_id = address.address_id
+
+/* Now you can call the query with */
+SELECT * FROM customer_info
+
+/* To replace or alter an existing view you can run CREATE OR REPLACE */
+CREATE OR REPLACE VIEW customer_info AS
+SELECT first_name, last_name, address, district FROM customer
+JOIN address
+ON customer.address_id = address.address_id
+
+/* To change the name you can */
+ALTER VIEW customer_info RENAME TO c_info
+
+/* to drop the view */
+DROP VIEW c_info 
+
+/* Lecture 79: Import and Export
+import data from a .csv file to an already existing database */
+
+ /* first create table - pgAdmin will not create a table from a csv and fill it at once */
+CREATE TABLE simple(
+  a INTEGER,
+  b INTEGER,
+  c INTEGER
+)
+/* you then need to use the GUI system to import the file in the same way that you inport a new database but have to change the file type and whether there are headers or not */
+
+/* Export is very similar to import using the GUI of pgAdmin and the selections along the way */
+
