@@ -288,12 +288,218 @@ FROM payment
 SELECT COUNT(payment_id)
 FROM payment
 WHERE EXTRACT(dow FROM payment_date) = 1
+/* dow is day of week */
+
+
+/* Lecture 51: Mathematical Functions and Operators
+/* rental rate is what percentage of replacement cost*/
+SELECT ROUND(rental_rate/replacement_cost*100, 2) AS Percent_Cost FROM film
 
 
 
+/*Lecture 52: String and Operators
+/* String concatenation - */
+SELECT first_name || ' ' || last_name As fullname from customer
+
+/* Create email addresses for all customers */
+SELECT Lower(left(first_name, 1) || last_name || 'videostore.com') FROM customer
 
 
+/* Lecture 53: SubQuery */
+
+/* get list of students and thier grade */
+SELECT student, grade FROM test_scores
+
+/* get list of average grades */ 
+SELECT AVG(grade) FROM test_scores
+
+/* get list of students that scored above the average grade */
+SELECT student, grade FROM test_scores WHERE grade > (SELECT AVG(grade) FROM test_scores)
+/* query inside the parentheses is run first providing the result to the remaining query */
+
+/* can use a subquery rather than a join in some cases */
+SELECT student, grade FROM test_scores WHERE student IN (SELECT student FROM honor_roll_table)
+
+/* The EXISTS operator is used to test for the exisxtnace of rows in a subquery -- Typically a subquery is passed in the EXITS() function to check is any rows are returned with the subquery */
+SELECT column_name FROM table_name WHERE EXISTS (SELECT column_name FROM table_name WHERE condition)
+/* returns TRUE or FALSE if any rows would be returned */
+
+/* film titles that have an above average rental rate */
+SELECT title FROM film WHERE rental_rate > (SELECT AVG(rental_rate) FROM film)
+
+/* film ids and titles that where returned between 5/29/2005 and 5/30/2005 ordered by film id */
+SELECT film_id, title 
+FROM film 
+WHERE film_id IN 
+(SELECT inventory.film_id 
+ FROM rental 
+ Join inventory ON inventory.inventory_id = rental.inventory_id
+ WHERE rental.return_date BETWEEN '2005-05-29' AND '2005-05-30')
+ ORDER BY film_id
+
+/* customer names where the customer has a single payment greater than $11 */
+SELECT first_name || ' ' || last_name AS full_name FROM customer AS c Where EXISTS (SELECT * FROM payment as p WHERE p.customer_id = c.customer_id AND amount > 11) 
+
+/* Lecture 54: Self-join */
+/**
+Query where a table is joined to itself 
+It is useful for comparing values in a columns of rows within the same table. 
+Uses same syntax as regular join but with the same table in both parts. 
+Must use an alias for the table.
+**/
+
+/* Syntax */
+SELECT tableA.col, tableB.col FROM table AS tableA JOIN table AS tableB ON tableA.some_col = tableB.other_column
+
+/* find all the pairs of films that have the same length*/
+SELECT film1.title, film2.title, film1.length FROM film AS film1 
+JOIN film AS film2 ON film1.length = film2.length AND film1.title != film2.title
+
+/* Assessment Test 2 */
+
+/* How can you retrieve all the information from the cd.facilities table? */
+SELECT * FROM cd.facilities
+
+/* You want to print out a list of all of the facilities and their cost to members. How would you retrieve a list of only facility names and costs? */
+SELECT name, membercost FROM cd.facilities
+
+/* How can you produce a list of facilities that charge a fee to members? */
+SELECT * FROM cd.facilities WHERE membercost > 0
+
+/* How can you produce a list of facilities that charge a fee to members, and that fee is less than 1/50th of the monthly maintenance cost? Return the facid, facility name, member cost, and monthly maintenance of the facilities in question. */
+SELECT facid, name, membercost, monthlymaintenance FROM cd.facilities WHERE membercost > 0 AND membercost < monthlymaintenance/50.0
+
+/* How can you produce a list of all facilities with the word 'Tennis' in their name? */
+SELECT * FROM cd.facilities WHERE name LIKE('%Tennis%')
+
+/* How can you retrieve the details of facilities with ID 1 and 5? Try to do it without using the OR operator. */
+
+SELECT * FROM cd.facilities WHERE facid IN(1, 5)
+
+/*How can you produce a list of members who joined after the start of September 2012? Return the memid, surname, firstname, and joindate of the members in question.*/
+SELECT memid, surname, firstname, joindate FROM cd.members WHERE joindate >= '2012-09-01'
+
+/* How can you produce an ordered list of the first 10 surnames in the members table? The list must not contain duplicates. */
+SELECT DISTINCT surname FROM cd.members ORDER BY surname LIMIT 10
+
+/* You'd like to get the signup date of your last member. How can you retrieve this information? */
+SELECT MAX(joindate) FROM cd.members 
+
+/* Produce a count of the number of facilities that have a cost to guests of 10 or more. */
+SELECT COUNT(*) FROM cd.facilities WHERE guestcost >= 10
+
+/* Produce a list of the total number of slots booked per facility in the month of September 2012. Produce an output table consisting of facility id and slots, sorted by the number of slots. */
+SELECT facid, SUM(slots) from cd.bookings 
+WHERE starttime BETWEEN '2012-09-01' AND '2012-10-01' 
+GROUP BY facid ORDER BY SUM(slots)
+
+/* Produce a list of facilities with more than 1000 slots booked. Produce an output table consisting of facility id and total slots, sorted by facility id. */
+SELECT facid, SUM(slots) FROM cd.bookings GROUP BY facid 
+HAVING SUM(slots) > 1000 ORDER BY facid
+
+/* How can you produce a list of the start times for bookings for tennis courts, for the date '2012-09-21'? Return a list of start time and facility name pairings, ordered by the time. */
+SELECT starttime, name FROM cd.bookings AS book 
+JOIN cd.facilities AS fac ON fac.facid = book.facid 
+WHERE name LIKE('Tennis%') AND starttime BETWEEN '2012-09-21' AND '2012-09-22'
+ORDER BY starttime
+
+/* How can you produce a list of the start times for bookings by members named 'David Farrell'? */
+SELECT starttime FROM cd.bookings AS B 
+JOIN cd.members AS M ON B.memid = M.memid 
+WHERE m.firstname = 'David' AND m.surname='Farrell'
+
+/* Lecture 63 Create Tables */
+CREATE TABLE table_name(
+  column1 TYPE Options,
+  column2 TYPE Options
+)
+
+/* create account table */
+CREATE TABLE account(
+	user_id SERIAL PRIMARY KEY, 
+	username VARCHAR(50) UNIQUE NOT NULL,
+	password VARCHAR(50) NOT NULL,
+	email VARCHAR(250) UNIQUE NOT NULL,
+	created_on TIMESTAMP NOT NULL,
+	last_login TIMESTAMP
+)
+
+/* create job table */
+CREATE TABLE job(
+	job_id SERIAL PRIMARY KEY,
+	job_name VARCHAR(200) UNIQUE NOT NULL
+)
+
+/* create account_job table */
+CREATE TABLE account_job(
+	user_id INTEGER REFERENCES account(user_id),
+	job_id INTEGER REFERENCES job(job_id),
+	hire_date TIMESTAMP
+)
+
+/* Lecture 64: Insert data into tables */
+INSERT INTO table(column1,column2)
+VALUES(value1, value2)
+
+/* Insert data into account table */
+INSERT INTO account(username, password, email, created_on)
+VALUES
+('Jose', 'passowrd','jose@mail.com',CURRENT_TIMESTAMP)
+
+/* Insert into job table */
+Insert INTO job(job_name)
+VALUES
+('President')
+
+/* Insert into account_job table */
+INSERT INTO account_job(user_id, job_id, hire_date)
+VALUES (1,1,CURRENT_TIMESTAMP)
 
 
+/* Lecture 65: UPDATE*/
+UPDATE table
+SET column1 = value1,
+    column2 = value2
+WHERE 
+    condition;
 
+/* update account_job table hire_date column based on user_id */
+UPDATE account_job
+SET hire_date = account.created_on
+FROM account
+WHERE account_job.user_id = account.user_id
 
+/* update and provide the updated information */
+UPDATE account
+SET last_login = CURRENT_TIMESTAMP
+RETURNING email, created_on, last_login
+
+/* Lecture 66: DELETE */
+
+/* Delete from table based on condition */
+DELETE FROM table
+WHERE condition
+
+/* Delete based on the presence in other tables */
+DELETE FROM tableA
+USING tableB
+WHERE tableA.id=tableB.id
+
+/* Delete all rows from table */
+DELETE FROM table
+
+/* can also use the RETURNING command with DELETE */
+
+/* Lecture 67: ALTER */
+
+/* add new column to table */
+ALTER TABLE table_name ADD COLUMN new_col TYPE
+
+/* remove column from table */
+ALTER TABLE table_name
+DROP COLUMN col_name
+
+/* Alter constraints */
+ALTER TABLE table_name
+ALTER COLUMN col_name
+SET DEFAULT value
