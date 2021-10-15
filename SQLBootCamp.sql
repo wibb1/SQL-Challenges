@@ -355,6 +355,9 @@ SELECT tableA.col, tableB.col FROM table AS tableA JOIN table AS tableB ON table
 SELECT film1.title, film2.title, film1.length FROM film AS film1 
 JOIN film AS film2 ON film1.length = film2.length AND film1.title != film2.title
 
+/***********************************************
+/* Section 7: Assessment Test */
+/***********************************************/
 /* Assessment Test 2 */
 
 /* How can you retrieve all the information from the cd.facilities table? */
@@ -408,6 +411,10 @@ SELECT starttime FROM cd.bookings AS B
 JOIN cd.members AS M ON B.memid = M.memid 
 WHERE m.firstname = 'David' AND m.surname='Farrell'
 
+
+/***********************************************
+/* Section 8: Creatng Databases and Tables */
+/***********************************************/
 /* Lecture 63 Create Tables */
 CREATE TABLE table_name(
   column1 TYPE Options,
@@ -503,3 +510,87 @@ DROP COLUMN col_name
 ALTER TABLE table_name
 ALTER COLUMN col_name
 SET DEFAULT value
+
+/* PLAYGROUND */ 
+/* Create new table */
+CREATE TABLE information(
+	info_id SERIAL PRIMARY KEY,
+	title VARCHAR(500) NOT NULL,
+	person VARCHAR(50) NOT NULL UNIQUE
+)
+
+/* alter table name information to new_info */
+ALTER TABLE information
+RENAME TO new_info
+
+
+/* alter table comuln name person to people */
+ALTER TABLE new_info
+RENAME COLUMN person TO people
+
+/* entering the following */
+INSERT INTO new_info(title)
+VALUES ('some new title')
+/* returns an error - 
+ERROR:  null value in column "people" of relation "new_info" violates not-null constraint
+DETAIL:  Failing row contains (1, some new title, null).
+SQL state: 23502
+*/
+
+ALTER TABLE new_info
+ALTER COLUMN people DROP NOT NULL
+
+/* previous querry would work since the not null constraint has been removed */
+
+/* Lecture 68: Drop Table 
+* Allows us to completely remove a colun from a table 
+* This will also remove all of is indexes and constraints involving the column
+* It will not remove columns used in views, triggers, or stored procedures without the additional CASCADE clause 
+*/
+/* to drop a column */
+ALTER TABLE table_name
+DROP COLUMN col_name
+
+/* drop a column and associated dependencies */
+ALTER TABLE table_name
+DROP COLUMN col_name CASCADE
+
+/* common to add IF EXISTS before column name to avoid error */
+ALTER TABLE table_name
+DROP COLUMN IF EXISTS col_name
+
+/* Drop multiple columns */
+ALTER TABLE table_name
+DROP COLUMN IF EXISTS col_one,
+DROP COLUMN IF EXISTS col_two
+
+/* drop a column */
+ALTER TABLE new_info DROP COLUMN people
+
+/* or to protect against an error */
+ALTER TABLE new_info DROP COLUMN IF EXISTS people
+
+/* Lecture 69: Check constraint */
+/* create table of employees with some check constraints */
+CREATE TABLE employees(
+emp_id SERIAL PRIMARY KEY,
+	first_name VARCHAR(50) NOT NULL,
+	last_name VARCHAR(50) NOT NULL,
+	birthdate DATE CHECK(birthdate > '1900-01-01'),
+	hire_date DATE CHECK (hire_date > birthdate),
+	salary INTEGER CHECK (salary>0)
+)
+
+/* when entering this new employee */
+INSERT INTO employees (first_name, last_name, birthdate, hire_date, salary)
+VALUES ('Jose', 'Portilla', '1890-11-03', '2010-01-01', 100)
+
+/* you get the error -
+ERROR:  new row for relation "employees" violates check constraint "employees_birthdate_check"
+DETAIL:  Failing row contains (1, Jose, Portilla, 1899-11-03, 2010-01-01, 100).
+SQL state: 23514
+*/
+
+/* when you fix the birthdate you are able to submit the values */
+INSERT INTO employees (first_name, last_name, birthdate, hire_date, salary)
+VALUES ('Jose', 'Portilla', '1990-11-03', '2010-01-01', 100)
